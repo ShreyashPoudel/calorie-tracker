@@ -7,5 +7,5 @@ import react from '@vitejs/plugin-react'
 // URL in the built HTML needs to start with `/calorie-tracker/`.
 export default defineConfig({
   plugins: [react()],
-  base: '/calorie-tracker/',
+  base: '/',
 })
