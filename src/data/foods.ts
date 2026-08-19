@@ -39,13 +39,13 @@ export const FOODS: FoodTemplate[] = [
   { name: 'Milk', calories: 42, protein: 3.4 },
   { name: 'Curd (yogurt)', calories: 59, protein: 3.5 },
   // 1 medium banana (with skin) ≈ 118 g → ~105 kcal, ~1.3 g protein
-  // {
-  //   name: 'Banana',
-  //   calories: 89,
-  //   protein: 1.1,
-  //   pieceWeight: 118,
-  //   pieceUnit: 'banana',
-  // },
+  {
+    name: 'Banana',
+    calories: 89,
+    protein: 1.3,
+    pieceWeight: 118,
+    pieceUnit: 'banana',
+  },
   // // 1 medium apple ≈ 182 g → ~95 kcal, ~0.5 g protein
   // {
   //   name: 'Apple',
