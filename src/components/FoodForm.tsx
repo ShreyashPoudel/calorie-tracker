@@ -165,10 +165,16 @@ export function FoodForm({
   const quantityLabel =
     state.unit === 'piece'
       ? template?.pieceUnit
-        ? `Number of ${template.pieceUnit}s`
+        ? `Number of ${pluralizePieceUnit(template.pieceUnit)}`
         : 'Number of pieces'
       : 'Quantity (g)'
   const quantityPlaceholder = state.unit === 'piece' ? '1' : '100'
+
+  // The toggle label mirrors the food's pieceUnit so "Oil" shows "tbsp"
+  // and "Eggs" shows "eggs" instead of a generic "pieces".
+  const pieceUnitLabel = template?.pieceUnit
+    ? pluralizePieceUnit(template.pieceUnit)
+    : 'pieces'
 
   return (
     <div
@@ -253,7 +259,7 @@ export function FoodForm({
                   disabled={!pieceAvailable}
                   onClick={() => handleUnitChange('piece')}
                 >
-                  pieces
+                  {pieceUnitLabel}
                 </UnitButton>
               </div>
             </div>
@@ -363,4 +369,13 @@ function UnitButton({
       {children}
     </button>
   )
+}
+
+/**
+ * Pluralize a piece-unit label. `tbsp` is already invariant so it stays
+ * as-is; everything else gets a trailing `s`.
+ */
+function pluralizePieceUnit(unit: string): string {
+  const invariant = new Set(['tbsp'])
+  return invariant.has(unit) ? unit : `${unit}s`
 }
