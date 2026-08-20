@@ -25,6 +25,16 @@ CREATE TABLE IF NOT EXISTS foods (
 
 CREATE INDEX IF NOT EXISTS idx_foods_date ON foods(date);
 
+-- Reusable meal templates — e.g. "Max breakfast" = 3 eggs + oats + milk + whey.
+-- `items` is a JSONB array of Food-shaped rows (see src/types/nutrition.ts).
+CREATE TABLE IF NOT EXISTS meal_templates (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT NOT NULL,
+  meal        TEXT NOT NULL CHECK (meal IN ('breakfast', 'lunch', 'snacks', 'dinner')),
+  items       JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Seed default targets (idempotent).
 INSERT INTO targets (id, calories, protein) VALUES (1, 2000, 150)
   ON CONFLICT (id) DO NOTHING;
@@ -40,5 +50,6 @@ INSERT INTO targets (id, calories, protein) VALUES (1, 2000, 150)
 --         ALTER TABLE foods   ENABLE ROW LEVEL SECURITY;
 --         CREATE POLICY "anon all" ON foods   FOR ALL TO anon USING (true) WITH CHECK (true);
 -- Pick (a) for personal use, (b) if you'll ever expose this to other users.
-ALTER TABLE targets DISABLE ROW LEVEL SECURITY;
-ALTER TABLE foods   DISABLE ROW LEVEL SECURITY;
+ALTER TABLE targets       DISABLE ROW LEVEL SECURITY;
+ALTER TABLE foods         DISABLE ROW LEVEL SECURITY;
+ALTER TABLE meal_templates DISABLE ROW LEVEL SECURITY;

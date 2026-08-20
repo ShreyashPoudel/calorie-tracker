@@ -58,3 +58,23 @@ export interface AppData {
   /** Date-keyed map of day logs. Sparse — only days with entries are stored. */
   days: Record<string, DayLog>
 }
+
+/** One item inside a meal template — same shape as a logged Food minus id/date. */
+export interface TemplateItem {
+  name: string
+  meal: MealType
+  quantity: number
+  grams: number
+  unit: FoodUnit
+  pieceUnit?: string
+  calories: number
+  protein: number
+}
+
+export interface MealTemplate {
+  id: string
+  name: string
+  meal: MealType
+  items: TemplateItem[]
+  createdAt: string
+}

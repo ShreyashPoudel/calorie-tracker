@@ -15,10 +15,13 @@ export function DashboardPage() {
   const {
     data,
     targets,
+    templates,
     getFoods,
     addFood,
     updateFood,
     deleteFood,
+    applyTemplate,
+    saveTemplate,
   } = useNutrition()
 
   const today = useMemo(() => toISODate(new Date()), [])
@@ -52,9 +55,14 @@ export function DashboardPage() {
             meal={meal}
             date={date}
             foods={foodsFor(meal)}
+            templates={templates}
             onAdd={(draft) => addFood(date, draft)}
             onUpdate={(food) => updateFood(date, food)}
             onDelete={(id) => deleteFood(date, id)}
+            onApplyTemplate={(id) => applyTemplate(date, id)}
+            onSaveTemplate={(name, targetMeal, items) =>
+              saveTemplate(name, targetMeal, items)
+            }
           />
         ))}
       </div>

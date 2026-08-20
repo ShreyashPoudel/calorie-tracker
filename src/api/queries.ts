@@ -2,7 +2,7 @@
 // PostgREST query builder. Each function maps to one or two requests.
 
 import { supabase } from './db'
-import type { Food, Targets } from '../types/nutrition'
+import type { Food, MealTemplate, Targets } from '../types/nutrition'
 
 interface FoodRow {
   id: string
@@ -103,5 +103,55 @@ export async function upsertTargets(targets: Targets): Promise<void> {
   const { error } = await supabase
     .from('targets')
     .upsert({ id: 1, calories: targets.calories, protein: targets.protein })
+  if (error) throw error
+}
+
+// ─── Meal templates ─────────────────────────────────────────────────────
+
+interface TemplateRow {
+  id: string
+  name: string
+  meal: MealTemplate['meal']
+  items: unknown
+  created_at: string
+}
+
+function rowToTemplate(row: TemplateRow): MealTemplate {
+  return {
+    id: row.id,
+    name: row.name,
+    meal: row.meal,
+    items: Array.isArray(row.items) ? (row.items as MealTemplate['items']) : [],
+    createdAt: row.created_at,
+  }
+}
+
+export async function loadTemplates(): Promise<MealTemplate[]> {
+  const { data, error } = await supabase
+    .from('meal_templates')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return ((data ?? []) as TemplateRow[]).map(rowToTemplate)
+}
+
+export async function createTemplate(
+  template: Omit<MealTemplate, 'id' | 'createdAt'>,
+): Promise<MealTemplate> {
+  const { data, error } = await supabase
+    .from('meal_templates')
+    .insert({
+      name: template.name,
+      meal: template.meal,
+      items: template.items,
+    })
+    .select('*')
+    .single()
+  if (error) throw error
+  return rowToTemplate(data as TemplateRow)
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  const { error } = await supabase.from('meal_templates').delete().eq('id', id)
   if (error) throw error
 }

@@ -6,12 +6,21 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { AppData, Food, Targets } from '../types/nutrition'
+import type {
+  AppData,
+  Food,
+  MealTemplate,
+  Targets,
+  TemplateItem,
+} from '../types/nutrition'
 import {
+  createTemplate as createTemplateRow,
   deleteFoodRow,
+  deleteTemplate as deleteTemplateRow,
   insertFood,
   loadAllFoods,
   loadTargets,
+  loadTemplates,
   updateFoodRow,
   upsertTargets,
 } from '../api/queries'
@@ -19,6 +28,8 @@ import {
 export interface NutritionContextValue {
   data: AppData
   targets: Targets
+  /** Reusable meal templates (e.g. "Max breakfast"). */
+  templates: MealTemplate[]
   /** True once the initial Supabase load has resolved (success or fail). */
   loaded: boolean
   /** Last error from a load or write — surfaced in the UI so silent failures don't bite. */
@@ -31,6 +42,12 @@ export interface NutritionContextValue {
   updateFood: (date: string, food: Food) => void
   deleteFood: (date: string, foodId: string) => void
   setTargets: (targets: Targets) => void
+  /** Save the given items as a reusable meal template. */
+  saveTemplate: (name: string, meal: Food['meal'], items: TemplateItem[]) => Promise<MealTemplate | null>
+  /** Delete a template by id. */
+  removeTemplate: (id: string) => void
+  /** Add every item in a template to the given date (returns the new foods). */
+  applyTemplate: (date: string, templateId: string) => Food[]
 }
 
 const DEFAULT_DATA: AppData = {
@@ -70,20 +87,22 @@ function persist(
 
 export function NutritionProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(DEFAULT_DATA)
+  const [templates, setTemplates] = useState<MealTemplate[]>([])
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Initial load from Postgres.
   useEffect(() => {
     let cancelled = false
-    Promise.all([loadAllFoods(), loadTargets()])
-      .then(([grouped, targets]) => {
+    Promise.all([loadAllFoods(), loadTargets(), loadTemplates()])
+      .then(([grouped, targets, tpls]) => {
         if (cancelled) return
         const days: AppData['days'] = {}
         for (const [date, foods] of Object.entries(grouped)) {
           days[date] = { date, foods }
         }
         setData({ version: 1, days, targets })
+        setTemplates(tpls)
         setError(null)
       })
       .catch((err) => {
@@ -162,10 +181,81 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
     void persist(setError, () => upsertTargets(targets))
   }, [])
 
+  const saveTemplate = useCallback(
+    async (
+      name: string,
+      meal: Food['meal'],
+      items: TemplateItem[],
+    ): Promise<MealTemplate | null> => {
+      // Optimistically create a local row so the new template shows up
+      // instantly. If the Supabase write fails, roll it back.
+      const optimistic: MealTemplate = {
+        id: makeId(),
+        name,
+        meal,
+        items,
+        createdAt: new Date().toISOString(),
+      }
+      setTemplates((prev) => [optimistic, ...prev])
+      try {
+        const saved = await createTemplateRow({ name, meal, items })
+        // Replace the optimistic row with the server-assigned one.
+        setTemplates((prev) =>
+          prev.map((t) => (t.id === optimistic.id ? saved : t)),
+        )
+        return saved
+      } catch (err) {
+        setTemplates((prev) => prev.filter((t) => t.id !== optimistic.id))
+        const msg = err instanceof Error ? err.message : String(err)
+        setError(`Couldn't save template: ${msg}`)
+        console.error('Failed to save template:', err)
+        return null
+      }
+    },
+    [],
+  )
+
+  const removeTemplate = useCallback((id: string) => {
+    // Snapshot for rollback if the delete fails.
+    const snapshot = templates
+    setTemplates((prev) => prev.filter((t) => t.id !== id))
+    void persist(setError, () => deleteTemplateRow(id)).catch(() => {
+      setTemplates(snapshot)
+    })
+  }, [templates])
+
+  const applyTemplate = useCallback(
+    (date: string, templateId: string): Food[] => {
+      const tpl = templates.find((t) => t.id === templateId)
+      if (!tpl || tpl.items.length === 0) return []
+      const newFoods: Food[] = tpl.items.map((item) => ({
+        ...item,
+        id: makeId(),
+      }))
+      setData((prev) => {
+        const existing = prev.days[date]?.foods ?? []
+        return {
+          ...prev,
+          days: {
+            ...prev.days,
+            [date]: { date, foods: [...existing, ...newFoods] },
+          },
+        }
+      })
+      // Persist each new food individually — they each get their own id.
+      for (const food of newFoods) {
+        void persist(setError, () => insertFood(date, food))
+      }
+      return newFoods
+    },
+    [templates],
+  )
+
   const value = useMemo<NutritionContextValue>(
     () => ({
       data,
       targets: data.targets,
+      templates,
       loaded,
       error,
       getDay,
@@ -174,8 +264,25 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
       updateFood,
       deleteFood,
       setTargets,
+      saveTemplate,
+      removeTemplate,
+      applyTemplate,
     }),
-    [data, loaded, error, getDay, getFoods, addFood, updateFood, deleteFood, setTargets],
+    [
+      data,
+      templates,
+      loaded,
+      error,
+      getDay,
+      getFoods,
+      addFood,
+      updateFood,
+      deleteFood,
+      setTargets,
+      saveTemplate,
+      removeTemplate,
+      applyTemplate,
+    ],
   )
 
   return (

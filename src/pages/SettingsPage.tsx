@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
+import type { MealTemplate } from '../types/nutrition'
+import { MEAL_LABELS, MEAL_EMOJI } from '../types/nutrition'
+import { calculateMealTotals, formatNumber } from '../utils/calculations'
 import { useNutrition } from '../context/useNutrition'
 
 export function SettingsPage() {
-  const { targets, setTargets } = useNutrition()
+  const { targets, setTargets, templates, removeTemplate } = useNutrition()
   const [calories, setCalories] = useState(String(targets.calories))
   const [protein, setProtein] = useState(String(targets.protein))
   const [saved, setSaved] = useState(false)
@@ -34,7 +37,7 @@ export function SettingsPage() {
       <header>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Adjust your daily nutrition targets.
+          Adjust your daily nutrition targets and manage templates.
         </p>
       </header>
 
@@ -91,14 +94,79 @@ export function SettingsPage() {
       </form>
 
       <section className="card p-5">
+        <h2 className="mb-1 text-sm font-semibold text-slate-700">
+          Meal templates
+        </h2>
+        <p className="mb-3 text-xs text-slate-500">
+          Saved from the dashboard via "Save as template". Tap one on any meal
+          card to log it instantly.
+        </p>
+
+        {templates.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+            No templates yet.
+          </p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {templates.map((tpl) => (
+              <TemplateRow
+                key={tpl.id}
+                template={tpl}
+                onDelete={() => removeTemplate(tpl.id)}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="card p-5">
         <h2 className="mb-2 text-sm font-semibold text-slate-700">
           About your data
         </h2>
         <p className="text-sm text-slate-500">
-          All entries are stored locally in your browser (localStorage). Nothing
-          is sent to a server, so clearing your browser data will erase your log.
+          All entries are stored in Supabase (cloud Postgres), so they sync
+          across every device you log in from. Templates follow the same
+          pattern.
         </p>
       </section>
     </div>
+  )
+}
+
+function TemplateRow({
+  template,
+  onDelete,
+}: {
+  template: MealTemplate
+  onDelete: () => void
+}) {
+  const totals = calculateMealTotals(template.items as never, template.meal)
+  return (
+    <li className="flex items-center justify-between gap-3 py-2.5">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span aria-hidden>{MEAL_EMOJI[template.meal]}</span>
+          <span className="font-medium text-slate-800">{template.name}</span>
+          <span className="text-xs text-slate-500">
+            · {MEAL_LABELS[template.meal]}
+          </span>
+        </div>
+        <div className="mt-0.5 text-xs text-slate-500">
+          {template.items.length} item{template.items.length === 1 ? '' : 's'}
+          {' · '}
+          {formatNumber(totals.calories)} kcal ·{' '}
+          {formatNumber(totals.protein)} g protein
+        </div>
+      </div>
+      <button
+        type="button"
+        className="btn-ghost text-xs text-red-600 hover:bg-red-50"
+        onClick={() => {
+          if (confirm(`Delete template "${template.name}"?`)) onDelete()
+        }}
+      >
+        Delete
+      </button>
+    </li>
   )
 }

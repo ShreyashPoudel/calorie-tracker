@@ -1,40 +1,51 @@
 import { useState } from 'react'
-import type { Food, MealType } from '../types/nutrition'
+import type { Food, MealType, TemplateItem } from '../types/nutrition'
 import { MEAL_EMOJI, MEAL_LABELS } from '../types/nutrition'
 import { calculateMealTotals, formatNumber } from '../utils/calculations'
 import { FoodForm } from './FoodForm'
 import { FoodItem } from './FoodItem'
+import { SaveAsTemplateDialog } from './SaveAsTemplateDialog'
+import { TemplatePicker } from './TemplatePicker'
 
 interface MealCardProps {
   meal: MealType
   date: string
   foods: Food[]
+  templates: import('../types/nutrition').MealTemplate[]
   onAdd: (food: Omit<Food, 'id'>) => void
   onUpdate: (food: Food) => void
   onDelete: (foodId: string) => void
+  onApplyTemplate: (templateId: string) => void
+  onSaveTemplate: (name: string, meal: MealType, items: TemplateItem[]) => void
 }
 
 export function MealCard({
   meal,
   date,
   foods,
+  templates,
   onAdd,
   onUpdate,
   onDelete,
+  onApplyTemplate,
+  onSaveTemplate,
 }: MealCardProps) {
-  const [showForm, setShowForm] = useState(false)
+  const [mode, setMode] = useState<'idle' | 'add' | 'template' | 'save' | 'edit'>('idle')
   const [editing, setEditing] = useState<Food | undefined>(undefined)
 
   const totals = calculateMealTotals(foods, meal)
+  const mealFoods = foods.filter((f) => f.meal === meal)
+  const hasItems = mealFoods.length > 0
+  const templateCount = templates.filter((t) => t.meal === meal).length
 
   function openAdd() {
     setEditing(undefined)
-    setShowForm(true)
+    setMode('add')
   }
 
   function openEdit(food: Food) {
     setEditing(food)
-    setShowForm(true)
+    setMode('edit')
   }
 
   function handleSubmit(draft: Omit<Food, 'id'>) {
@@ -43,13 +54,18 @@ export function MealCard({
     } else {
       onAdd(draft)
     }
-    setShowForm(false)
+    setMode('idle')
+    setEditing(undefined)
+  }
+
+  function closeDialog() {
+    setMode('idle')
     setEditing(undefined)
   }
 
   return (
     <section className="card flex flex-col p-4">
-      <header className="mb-3 flex items-center justify-between">
+      <header className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="text-2xl" aria-hidden>
             {MEAL_EMOJI[meal]}
@@ -58,9 +74,24 @@ export function MealCard({
             {MEAL_LABELS[meal]}
           </h3>
         </div>
-        <button type="button" className="btn-secondary text-xs" onClick={openAdd}>
-          + Add food
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            className="btn-secondary text-xs"
+            onClick={() => setMode('template')}
+            disabled={templates.length === 0}
+            title={
+              templates.length === 0
+                ? 'Save a template from any meal first'
+                : `Log one of ${templateCount} template${templateCount === 1 ? '' : 's'} for ${MEAL_LABELS[meal].toLowerCase()}`
+            }
+          >
+            📋 Template
+          </button>
+          <button type="button" className="btn-secondary text-xs" onClick={openAdd}>
+            + Add food
+          </button>
+        </div>
       </header>
 
       {foods.length === 0 ? (
@@ -81,9 +112,15 @@ export function MealCard({
       )}
 
       <footer className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-sm">
-        <span className="font-medium text-slate-600">
-          {MEAL_LABELS[meal]} total
-        </span>
+        <button
+          type="button"
+          onClick={() => setMode('save')}
+          disabled={!hasItems}
+          className="text-xs font-medium text-brand-700 hover:text-brand-800 disabled:cursor-not-allowed disabled:text-slate-400"
+          title={hasItems ? 'Save current items as a reusable template' : 'Log some foods first'}
+        >
+          💾 Save as template
+        </button>
         <span className="text-slate-700">
           <strong className="font-semibold text-orange-600">
             {formatNumber(totals.calories)} kcal
@@ -96,16 +133,35 @@ export function MealCard({
         </span>
       </footer>
 
-      {showForm && (
+      {(mode === 'add' || mode === 'edit') && (
         <FoodForm
           meal={meal}
           date={date}
           initial={editing}
           onSubmit={handleSubmit}
-          onCancel={() => {
-            setShowForm(false)
-            setEditing(undefined)
+          onCancel={closeDialog}
+        />
+      )}
+      {mode === 'template' && (
+        <TemplatePicker
+          meal={meal}
+          templates={templates}
+          onPick={(id) => {
+            onApplyTemplate(id)
+            closeDialog()
           }}
+          onCancel={closeDialog}
+        />
+      )}
+      {mode === 'save' && (
+        <SaveAsTemplateDialog
+          meal={meal}
+          foods={mealFoods}
+          onSave={(name, targetMeal, items) => {
+            onSaveTemplate(name, targetMeal, items)
+            closeDialog()
+          }}
+          onCancel={closeDialog}
         />
       )}
     </section>
