@@ -139,23 +139,36 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
   const [authLoaded, setAuthLoaded] = useState(false)
   const [onboarded, setOnboarded] = useState(false)
 
-  // Track the current user id in a ref so async writes can guard against
-  // a sign-out that races with an in-flight request.
+  // Track the user id this provider thinks it's serving. Used by async
+  // writes to guard against racing with a sign-out / user switch.
   const userIdRef = useRef<string | null>(null)
   userIdRef.current = user?.id ?? null
+
+  // Tracks the uid of the in-flight initial load so we can drop a stale
+  // response (e.g. user A loads, signs out, user B starts loading — if A's
+  // request finishes second, we ignore it). Set synchronously when a load
+  // kicks off so the guard doesn't read a stale ref.
+  const activeLoadUidRef = useRef<string | null>(null)
 
   // ── Auth subscription + initial data load ─────────────────────────────
   useEffect(() => {
     let cancelled = false
 
     async function loadForUser(uid: string) {
+      activeLoadUidRef.current = uid
       try {
         const [grouped, t, tpls] = await Promise.all([
           loadAllFoods(),
           loadTargets(),
           loadTemplates(),
         ])
-        if (cancelled || userIdRef.current !== uid) return
+        // Drop the response if (a) we unmounted, or (b) another load
+        // started for a different user in the meantime. We compare against
+        // `activeLoadUidRef` (set synchronously above) instead of
+        // `userIdRef` because the latter only updates on re-render and can
+        // lag behind the in-flight load — which would make us bail out of
+        // a perfectly good load and leave the user stuck on the wizard.
+        if (cancelled || activeLoadUidRef.current !== uid) return
         const days: AppData['days'] = {}
         for (const [date, foods] of Object.entries(grouped)) {
           days[date] = { date, foods }
