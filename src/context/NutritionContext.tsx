@@ -90,14 +90,40 @@ function makeId(): string {
  * Apply a local mutation and persist it to Postgres. Errors are logged but
  * not thrown — the UI keeps working off the optimistic local state, so a
  * flaky connection won't lock the user out of their own data.
+ *
+ * Supabase errors aren't Error instances — they're plain objects with a
+ * `.message` (and sometimes `.code`/`.details`). We unpack defensively
+ * so the banner shows something useful instead of "[object Object]".
  */
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (err && typeof err === 'object') {
+    const e = err as {
+      message?: string
+      code?: string
+      details?: string
+      hint?: string
+    }
+    const parts: string[] = []
+    if (e.message) parts.push(e.message)
+    if (e.code) parts.push(`[${e.code}]`)
+    if (e.hint) parts.push(`hint: ${e.hint}`)
+    if (parts.length > 0) return parts.join(' · ')
+    try {
+      return JSON.stringify(err)
+    } catch {
+      return String(err)
+    }
+  }
+  return String(err)
+}
+
 function persist(
   setError: (msg: string) => void,
   fn: () => Promise<void>,
 ): Promise<void> {
   return fn().catch((err) => {
-    const msg = err instanceof Error ? err.message : String(err)
-    setError(`Supabase write failed: ${msg}`)
+    setError(`Supabase write failed: ${describeError(err)}`)
     console.warn('Supabase write failed:', err)
   })
 }
@@ -148,8 +174,7 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
         setError(null)
       } catch (err) {
         if (cancelled) return
-        const msg = err instanceof Error ? err.message : String(err)
-        setError(`Couldn't load from Supabase: ${msg}`)
+        setError(`Couldn't load from Supabase: ${describeError(err)}`)
         console.error('Failed to load from Supabase:', err)
       } finally {
         if (!cancelled) setLoaded(true)
