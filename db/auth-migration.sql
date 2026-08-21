@@ -1,8 +1,8 @@
 -- One-time migration to add Supabase Auth + per-user RLS.
 --
 -- Run this in the Supabase SQL editor in this exact order:
---   1. Sign up on the deployed app at https://shreyashpoudel.com.np so
---      auth.users has at least one row (your new account).
+--   1. Sign up on the deployed app (your Vercel URL) so auth.users has at
+--      least one row (your new account).
 --   2. Paste & run everything below in the SQL editor.
 --   3. Refresh the app — your existing data should be visible.
 --
