@@ -163,7 +163,7 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
       setLoaded(true)
     }
 
-    const { data: sub } = onAuthChange((_event, newSession) => {
+    const { data: sub } = onAuthChange(async (_event, newSession) => {
       const previousUid = userIdRef.current
       const nextUid = newSession?.user?.id ?? null
       setSession(newSession)
@@ -172,7 +172,7 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
       if (previousUid !== nextUid) {
         setLoaded(false)
         if (nextUid) {
-          void loadForUser(nextUid)
+          await loadForUser(nextUid)
         } else {
           resetForSignedOut()
         }
