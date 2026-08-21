@@ -3,6 +3,8 @@ import { NutritionProvider } from './context/NutritionContext'
 import { useNutrition } from './context/useNutrition'
 import { DashboardPage } from './pages/DashboardPage'
 import { HistoryPage } from './pages/HistoryPage'
+import { LoginPage } from './pages/LoginPage'
+import { OnboardingPage } from './pages/OnboardingPage'
 import { SettingsPage } from './pages/SettingsPage'
 
 type Route = 'dashboard' | 'history' | 'settings'
@@ -16,7 +18,25 @@ const NAV: Array<{ id: Route; label: string; icon: string }> = [
 function Shell() {
   const [route, setRoute] = useState<Route>('dashboard')
   const [historyDate, setHistoryDate] = useState<string | null>(null)
-  const { error, loaded } = useNutrition()
+  const {
+    error,
+    loaded,
+    authLoaded,
+    user,
+    onboarded,
+    signOut,
+  } = useNutrition()
+
+  // ── Auth gate ────────────────────────────────────────────────────────
+  // Four states: still resolving the session, signed out, signed in but
+  // not onboarded, fully ready. The first three render their own minimal
+  // chrome; only the last gets the full app shell.
+  if (!authLoaded) return <FullPageSpinner message="Loading…" />
+  if (!user) return <LoginPage />
+  if (!onboarded) return <OnboardingPage />
+
+  const email = user.email ?? ''
+  const shortEmail = email.length > 18 ? email.slice(0, 16) + '…' : email
 
   return (
     <div className="min-h-full">
@@ -39,25 +59,28 @@ function Shell() {
               </span>
             </span>
           </button>
-          <nav className="hidden gap-1 sm:flex">
-            {NAV.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                  route === item.id
-                    ? 'bg-brand-50 text-brand-700'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-                onClick={() => setRoute(item.id)}
-              >
-                <span className="mr-1" aria-hidden>
-                  {item.icon}
-                </span>
-                {item.label}
-              </button>
-            ))}
-          </nav>
+          <div className="flex items-center gap-2">
+            <nav className="hidden gap-1 sm:flex">
+              {NAV.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                    route === item.id
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                  onClick={() => setRoute(item.id)}
+                >
+                  <span className="mr-1" aria-hidden>
+                    {item.icon}
+                  </span>
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+            <UserMenu email={shortEmail} onSignOut={signOut} />
+          </div>
         </div>
       </header>
 
@@ -96,6 +119,86 @@ function Shell() {
           ))}
         </div>
       </nav>
+    </div>
+  )
+}
+
+function UserMenu({
+  email,
+  onSignOut,
+}: {
+  email: string
+  onSignOut: () => Promise<void>
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title={email}
+      >
+        <span
+          aria-hidden
+          className="grid h-6 w-6 place-items-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700"
+        >
+          {email.slice(0, 1).toUpperCase() || '?'}
+        </span>
+        <span className="hidden max-w-[8rem] truncate sm:inline">
+          {email || 'Account'}
+        </span>
+      </button>
+      {open && (
+        <>
+          {/* Click-outside catcher */}
+          <button
+            type="button"
+            aria-label="Close menu"
+            className="fixed inset-0 z-40 cursor-default"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            role="menu"
+            className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-lg border border-slate-100 bg-white shadow-lg"
+          >
+            <div className="border-b border-slate-100 px-3 py-2 text-[11px] text-slate-500">
+              Signed in as
+              <div className="truncate font-medium text-slate-700">
+                {email}
+              </div>
+            </div>
+            <button
+              type="button"
+              role="menuitem"
+              className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+              onClick={() => {
+                setOpen(false)
+                if (confirm('Sign out?')) void onSignOut()
+              }}
+            >
+              Sign out
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function FullPageSpinner({ message }: { message: string }) {
+  return (
+    <div className="grid min-h-screen place-items-center bg-slate-50">
+      <div className="flex items-center gap-3 text-sm text-slate-500">
+        <span
+          aria-hidden
+          className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-brand-600"
+        />
+        {message}
+      </div>
     </div>
   )
 }

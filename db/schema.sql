@@ -1,55 +1,51 @@
--- Run this once in the Supabase SQL editor
--- (https://app.supabase.com/project/_/sql) to create the tables the
--- calorie tracker expects.
-
-CREATE TABLE IF NOT EXISTS targets (
-  id        INT PRIMARY KEY DEFAULT 1,
-  calories  INT NOT NULL DEFAULT 2000,
-  protein   INT NOT NULL DEFAULT 150,
-  CHECK (id = 1)
-);
+-- Reference schema for the calorie tracker.
+-- This is documentation only — Supabase owns the live schema. To bootstrap
+-- a fresh project, run schema.sql + auth-migration.sql in order.
 
 CREATE TABLE IF NOT EXISTS foods (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   date        DATE NOT NULL,
-  meal        TEXT NOT NULL CHECK (meal IN ('breakfast', 'lunch', 'snacks', 'dinner')),
+  meal        TEXT NOT NULL CHECK (meal IN ('breakfast','lunch','snacks','dinner')),
   name        TEXT NOT NULL,
   quantity    NUMERIC NOT NULL,
   grams       NUMERIC NOT NULL,
-  unit        TEXT NOT NULL CHECK (unit IN ('g', 'piece')),
+  unit        TEXT NOT NULL CHECK (unit IN ('g','piece')),
   piece_unit  TEXT,
   calories    NUMERIC NOT NULL,
   protein     NUMERIC NOT NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX IF NOT EXISTS idx_foods_user ON foods(user_id);
+CREATE INDEX IF NOT EXISTS idx_foods_user_date ON foods(user_id, date);
 
-CREATE INDEX IF NOT EXISTS idx_foods_date ON foods(date);
+CREATE TABLE IF NOT EXISTS targets (
+  -- Per-user singleton: one targets row per auth user. PK is user_id.
+  user_id   UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  calories  INT NOT NULL DEFAULT 2000,
+  protein   INT NOT NULL DEFAULT 150
+);
 
--- Reusable meal templates — e.g. "Max breakfast" = 3 eggs + oats + milk + whey.
--- `items` is a JSONB array of Food-shaped rows (see src/types/nutrition.ts).
 CREATE TABLE IF NOT EXISTS meal_templates (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name        TEXT NOT NULL,
-  meal        TEXT NOT NULL CHECK (meal IN ('breakfast', 'lunch', 'snacks', 'dinner')),
+  meal        TEXT NOT NULL CHECK (meal IN ('breakfast','lunch','snacks','dinner')),
   items       JSONB NOT NULL DEFAULT '[]'::jsonb,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX IF NOT EXISTS idx_meal_templates_user ON meal_templates(user_id);
 
--- Seed default targets (idempotent).
-INSERT INTO targets (id, calories, protein) VALUES (1, 2000, 150)
-  ON CONFLICT (id) DO NOTHING;
+-- RLS: every table is owner-scoped. The anon role has no policies, so
+-- unauthenticated requests get empty results. Service role bypasses RLS
+-- (used only by server-side migrations / cron if you ever add them).
+ALTER TABLE foods          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE targets        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE meal_templates ENABLE ROW LEVEL SECURITY;
 
--- IMPORTANT: Supabase enables Row Level Security by default. This app uses
--- the anon key, so we need to either:
---   (a) disable RLS on both tables (simplest for single-user apps):
---         ALTER TABLE targets DISABLE ROW LEVEL SECURITY;
---         ALTER TABLE foods   DISABLE ROW LEVEL SECURITY;
---   or (b) leave RLS enabled and add permissive policies, e.g.:
---         ALTER TABLE targets ENABLE ROW LEVEL SECURITY;
---         CREATE POLICY "anon all" ON targets FOR ALL TO anon USING (true) WITH CHECK (true);
---         ALTER TABLE foods   ENABLE ROW LEVEL SECURITY;
---         CREATE POLICY "anon all" ON foods   FOR ALL TO anon USING (true) WITH CHECK (true);
--- Pick (a) for personal use, (b) if you'll ever expose this to other users.
-ALTER TABLE targets       DISABLE ROW LEVEL SECURITY;
-ALTER TABLE foods         DISABLE ROW LEVEL SECURITY;
-ALTER TABLE meal_templates DISABLE ROW LEVEL SECURITY;
+CREATE POLICY "owner_all_foods"          ON foods          FOR ALL TO authenticated
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "owner_all_targets"        ON targets        FOR ALL TO authenticated
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "owner_all_meal_templates" ON meal_templates FOR ALL TO authenticated
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

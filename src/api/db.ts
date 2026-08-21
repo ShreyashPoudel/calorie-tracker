@@ -25,6 +25,30 @@ if (!rawUrl || !key) {
 
 const url = normalizeUrl(rawUrl)
 
+// `persistSession: true` is required so the browser keeps the Supabase
+// session in localStorage and rehydrates it on reload — otherwise the
+// user would be logged out on every refresh.
 export const supabase = createClient(url, key, {
-  auth: { persistSession: false },
+  auth: { persistSession: true, autoRefreshToken: true },
 })
+
+/** Returns the currently signed-in session, or null if not logged in. */
+export async function getSession() {
+  const { data } = await supabase.auth.getSession()
+  return data.session
+}
+
+/** Subscribes to auth state changes (sign-in, sign-out, token refresh). */
+export function onAuthChange(
+  cb: Parameters<typeof supabase.auth.onAuthStateChange>[0],
+) {
+  return supabase.auth.onAuthStateChange(cb)
+}
+
+/** Throws if there's no signed-in user. Used by writes that need user_id. */
+export async function requireUser() {
+  const { data, error } = await supabase.auth.getUser()
+  if (error) throw error
+  if (!data.user) throw new Error('Not signed in')
+  return data.user
+}

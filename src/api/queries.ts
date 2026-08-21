@@ -1,7 +1,11 @@
 // Typed queries for the calorie tracker schema, built on Supabase's
 // PostgREST query builder. Each function maps to one or two requests.
+//
+// All reads/writes are scoped to the signed-in user via RLS policies on
+// the foods / targets / meal_templates tables. We still pass `user_id`
+// explicitly on inserts so the row is owned correctly from the start.
 
-import { supabase } from './db'
+import { requireUser, supabase } from './db'
 import type { Food, MealTemplate, Targets } from '../types/nutrition'
 
 interface FoodRow {
@@ -32,7 +36,7 @@ function rowToFood(row: FoodRow): Food {
   }
 }
 
-/** Load every logged food, grouped by ISO date. */
+/** Load every logged food for the signed-in user, grouped by ISO date. */
 export async function loadAllFoods(): Promise<Record<string, Food[]>> {
   const { data, error } = await supabase
     .from('foods')
@@ -46,23 +50,31 @@ export async function loadAllFoods(): Promise<Record<string, Food[]>> {
   return grouped
 }
 
-/** Load the single targets row. Falls back to defaults if absent. */
-export async function loadTargets(): Promise<Targets> {
+/**
+ * Load the current user's targets row.
+ * Returns `null` (not defaults) when no row exists, so the context can
+ * tell fresh signups apart from users who just haven't opened settings.
+ */
+export async function loadTargets(): Promise<Targets | null> {
+  const user = await requireUser()
   const { data, error } = await supabase
     .from('targets')
     .select('calories, protein')
-    .eq('id', 1)
+    .eq('user_id', user.id)
     .maybeSingle()
   if (error) throw error
+  if (!data) return null
   return {
-    calories: Number(data?.calories ?? 2000),
-    protein: Number(data?.protein ?? 150),
+    calories: Number(data.calories),
+    protein: Number(data.protein),
   }
 }
 
 export async function insertFood(date: string, food: Food): Promise<void> {
+  const user = await requireUser()
   const { error } = await supabase.from('foods').insert({
     id: food.id,
+    user_id: user.id,
     date,
     meal: food.meal,
     name: food.name,
@@ -99,10 +111,19 @@ export async function deleteFoodRow(foodId: string): Promise<void> {
   if (error) throw error
 }
 
+/**
+ * Upsert the current user's targets row. Keys the row on `user_id` so each
+ * user has exactly one targets row — first call creates it, subsequent
+ * calls update it.
+ */
 export async function upsertTargets(targets: Targets): Promise<void> {
+  const user = await requireUser()
   const { error } = await supabase
     .from('targets')
-    .upsert({ id: 1, calories: targets.calories, protein: targets.protein })
+    .upsert(
+      { user_id: user.id, calories: targets.calories, protein: targets.protein },
+      { onConflict: 'user_id' },
+    )
   if (error) throw error
 }
 
@@ -138,9 +159,11 @@ export async function loadTemplates(): Promise<MealTemplate[]> {
 export async function createTemplate(
   template: Omit<MealTemplate, 'id' | 'createdAt'>,
 ): Promise<MealTemplate> {
+  const user = await requireUser()
   const { data, error } = await supabase
     .from('meal_templates')
     .insert({
+      user_id: user.id,
       name: template.name,
       meal: template.meal,
       items: template.items,

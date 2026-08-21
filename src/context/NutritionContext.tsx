@@ -3,9 +3,11 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
+import type { Session, User } from '@supabase/supabase-js'
 import type {
   AppData,
   Food,
@@ -24,6 +26,7 @@ import {
   updateFoodRow,
   upsertTargets,
 } from '../api/queries'
+import { onAuthChange, supabase } from '../api/db'
 
 export interface NutritionContextValue {
   data: AppData
@@ -34,6 +37,14 @@ export interface NutritionContextValue {
   loaded: boolean
   /** Last error from a load or write — surfaced in the UI so silent failures don't bite. */
   error: string | null
+  /** Current Supabase user, or null if signed out. */
+  user: User | null
+  /** Current Supabase session (includes access token + user). */
+  session: Session | null
+  /** True once we've resolved the initial session (so we don't flash login → app). */
+  authLoaded: boolean
+  /** True once the user has completed onboarding (i.e. has a targets row). */
+  onboarded: boolean
   /** Foods for a specific date; returns empty array if no log exists. */
   getFoods: (date: string) => Food[]
   /** Get or create a day log for a date. */
@@ -48,11 +59,17 @@ export interface NutritionContextValue {
   removeTemplate: (id: string) => void
   /** Add every item in a template to the given date (returns the new foods). */
   applyTemplate: (date: string, templateId: string) => Food[]
+  /** Sign the current user out (clears session + local state). */
+  signOut: () => Promise<void>
 }
+
+// In-memory defaults used while the user hasn't completed onboarding yet.
+// Never written to the database until the onboarding wizard runs.
+const DEFAULT_TARGETS: Targets = { calories: 2000, protein: 150 }
 
 const DEFAULT_DATA: AppData = {
   version: 1,
-  targets: { calories: 2000, protein: 150 },
+  targets: DEFAULT_TARGETS,
   days: {},
 }
 
@@ -91,32 +108,106 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Initial load from Postgres.
+  const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [authLoaded, setAuthLoaded] = useState(false)
+  const [onboarded, setOnboarded] = useState(false)
+
+  // Track the current user id in a ref so async writes can guard against
+  // a sign-out that races with an in-flight request.
+  const userIdRef = useRef<string | null>(null)
+  userIdRef.current = user?.id ?? null
+
+  // ── Auth subscription + initial data load ─────────────────────────────
   useEffect(() => {
     let cancelled = false
-    Promise.all([loadAllFoods(), loadTargets(), loadTemplates()])
-      .then(([grouped, targets, tpls]) => {
-        if (cancelled) return
+
+    async function loadForUser(uid: string) {
+      try {
+        const [grouped, t, tpls] = await Promise.all([
+          loadAllFoods(),
+          loadTargets(),
+          loadTemplates(),
+        ])
+        if (cancelled || userIdRef.current !== uid) return
         const days: AppData['days'] = {}
         for (const [date, foods] of Object.entries(grouped)) {
           days[date] = { date, foods }
         }
-        setData({ version: 1, days, targets })
+        // No targets row → user hasn't onboarded yet. Keep the in-memory
+        // defaults so the OnboardingPage form can prefill, but flag
+        // `onboarded = false` so the gate holds them there.
+        if (t) {
+          setData({ version: 1, days, targets: t })
+          setOnboarded(true)
+        } else {
+          setData({ version: 1, days, targets: DEFAULT_TARGETS })
+          setOnboarded(false)
+        }
         setTemplates(tpls)
         setError(null)
-      })
-      .catch((err) => {
+      } catch (err) {
         if (cancelled) return
         const msg = err instanceof Error ? err.message : String(err)
         setError(`Couldn't load from Supabase: ${msg}`)
         console.error('Failed to load from Supabase:', err)
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoaded(true)
+      }
+    }
+
+    function resetForSignedOut() {
+      setData(DEFAULT_DATA)
+      setTemplates([])
+      setOnboarded(false)
+      setLoaded(true)
+    }
+
+    const { data: sub } = onAuthChange((_event, newSession) => {
+      const previousUid = userIdRef.current
+      const nextUid = newSession?.user?.id ?? null
+      setSession(newSession)
+      setUser(newSession?.user ?? null)
+      // Switching users (or signing in/out) resets data state.
+      if (previousUid !== nextUid) {
+        setLoaded(false)
+        if (nextUid) {
+          void loadForUser(nextUid)
+        } else {
+          resetForSignedOut()
+        }
+      }
+    })
+
+    // Resolve the initial session so we don't flash the login screen on
+    // a refresh where the user is actually still signed in.
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: initial } }) => {
+        if (cancelled) return
+        setSession(initial)
+        setUser(initial?.user ?? null)
+        setAuthLoaded(true)
+        if (initial?.user) {
+          void loadForUser(initial.user.id)
+        } else {
+          // Not signed in — just mark data as "loaded" (empty) and let the
+          // LoginPage render.
+          setLoaded(true)
+        }
       })
+      .catch((err) => {
+        if (cancelled) return
+        console.error('getSession failed:', err)
+        setAuthLoaded(true)
+        setLoaded(true)
+      })
+
     return () => {
       cancelled = true
+      sub.subscription.unsubscribe()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const getDay = useCallback(
@@ -178,6 +269,7 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
 
   const setTargets = useCallback((targets: Targets) => {
     setData((prev) => ({ ...prev, targets }))
+    setOnboarded(true)
     void persist(setError, () => upsertTargets(targets))
   }, [])
 
@@ -187,8 +279,6 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
       meal: Food['meal'],
       items: TemplateItem[],
     ): Promise<MealTemplate | null> => {
-      // Optimistically create a local row so the new template shows up
-      // instantly. If the Supabase write fails, roll it back.
       const optimistic: MealTemplate = {
         id: makeId(),
         name,
@@ -199,7 +289,6 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
       setTemplates((prev) => [optimistic, ...prev])
       try {
         const saved = await createTemplateRow({ name, meal, items })
-        // Replace the optimistic row with the server-assigned one.
         setTemplates((prev) =>
           prev.map((t) => (t.id === optimistic.id ? saved : t)),
         )
@@ -216,7 +305,6 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
   )
 
   const removeTemplate = useCallback((id: string) => {
-    // Snapshot for rollback if the delete fails.
     const snapshot = templates
     setTemplates((prev) => prev.filter((t) => t.id !== id))
     void persist(setError, () => deleteTemplateRow(id)).catch(() => {
@@ -242,7 +330,6 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
           },
         }
       })
-      // Persist each new food individually — they each get their own id.
       for (const food of newFoods) {
         void persist(setError, () => insertFood(date, food))
       }
@@ -251,6 +338,17 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
     [templates],
   )
 
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut()
+    // The onAuthStateChange subscription will reset state, but mirror it
+    // here so the UI doesn't have to wait for the next tick.
+    setUser(null)
+    setSession(null)
+    setOnboarded(false)
+    setData(DEFAULT_DATA)
+    setTemplates([])
+  }, [])
+
   const value = useMemo<NutritionContextValue>(
     () => ({
       data,
@@ -258,6 +356,10 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
       templates,
       loaded,
       error,
+      user,
+      session,
+      authLoaded,
+      onboarded,
       getDay,
       getFoods,
       addFood,
@@ -267,12 +369,17 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
       saveTemplate,
       removeTemplate,
       applyTemplate,
+      signOut,
     }),
     [
       data,
       templates,
       loaded,
       error,
+      user,
+      session,
+      authLoaded,
+      onboarded,
       getDay,
       getFoods,
       addFood,
@@ -282,6 +389,7 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
       saveTemplate,
       removeTemplate,
       applyTemplate,
+      signOut,
     ],
   )
 
