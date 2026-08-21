@@ -43,12 +43,24 @@ const QUOTES: string[] = [
   "You don't have to be extreme, just consistent.",
 ]
 
+// Gym / fitness cover photos from Unsplash. Stable direct URLs that work
+// without an API key. `?w=...&auto=format&fit=crop&q=80` keeps the
+// payload small. If a URL ever 404s the dark overlay still looks fine.
+const GYM_IMAGES = [
+  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=900&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1571010196384-0c1cb3d4e0e0?w=900&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1583500178690-f7fd39c43d4b?w=900&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=900&auto=format&fit=crop&q=80',
+]
+
 const QUOTES_PER_DAY = 5
 
 /**
  * Hash a YYYY-MM-DD string to a stable 32-bit integer. Different days
  * produce different starting offsets into the pool; same day always
- * produces the same quotes.
+ * produces the same quotes / images.
  */
 function hashDate(seed: string): number {
   let h = 0
@@ -58,31 +70,45 @@ function hashDate(seed: string): number {
   return h
 }
 
-function pickQuotes(date: Date): string[] {
+interface DailyPick {
+  quotes: string[]
+  leftImage: string
+  rightImage: string
+}
+
+function pickFor(date: Date): DailyPick {
   const seed = date.toISOString().slice(0, 10)
-  const start = hashDate(seed) % QUOTES.length
-  const picked: string[] = []
+  const h = hashDate(seed)
+  const qStart = h % QUOTES.length
+  const iStart = h % GYM_IMAGES.length
+  const quotes: string[] = []
   for (let i = 0; i < QUOTES_PER_DAY; i++) {
-    picked.push(QUOTES[(start + i) % QUOTES.length])
+    quotes.push(QUOTES[(qStart + i) % QUOTES.length])
   }
-  return picked
+  return {
+    quotes,
+    leftImage: GYM_IMAGES[iStart % GYM_IMAGES.length],
+    // Offset by one so left and right aren't identical on the same day.
+    rightImage: GYM_IMAGES[(iStart + 1) % GYM_IMAGES.length],
+  }
 }
 
 /**
- * Side-margin motivational quotes for the dashboard.
+ * Side-margin motivational quotes + cover images.
  *
- * - Hidden on narrow screens (the dashboard already fills the viewport).
- * - Picks 5 quotes per day from a pool of 30+ using today's date as
- *   the seed. Rotation is deterministic, so two users opening the app
- *   on the same day see the same set.
- * - Auto-refreshes at the next local-midnight so the quotes change
- *   without a page reload.
+ * - Picks 5 quotes from a pool of 30 (gym + diet + empowerment, mixed
+ *   male/female/neutral) using today's date as the seed. Rotation is
+ *   deterministic — two users opening the app on the same day see the
+ *   same set.
+ * - Also picks two different gym photos per day for the side panels.
+ * - Auto-refreshes at the next local midnight so quotes and images
+ *   change without a reload.
+ * - Hidden below the xl breakpoint so they don't crowd narrow screens.
  */
 export function MotivationalQuotes() {
-  const [quotes, setQuotes] = useState<string[]>(() => pickQuotes(new Date()))
+  const [pick, setPick] = useState<DailyPick>(() => pickFor(new Date()))
 
   useEffect(() => {
-    // Tick once at the next local midnight, then every midnight after.
     let timer: ReturnType<typeof setTimeout>
     function scheduleNext() {
       const now = new Date()
@@ -96,7 +122,7 @@ export function MotivationalQuotes() {
       )
       const ms = Math.max(1000, tomorrow.getTime() - now.getTime())
       timer = setTimeout(() => {
-        setQuotes(pickQuotes(new Date()))
+        setPick(pickFor(new Date()))
         scheduleNext()
       }, ms)
     }
@@ -106,57 +132,66 @@ export function MotivationalQuotes() {
 
   // 3 on the left, 2 on the right — uneven so the layout feels less
   // mirrored and more editorial.
-  const left = quotes.slice(0, 3)
-  const right = quotes.slice(3)
+  const leftQuotes = pick.quotes.slice(0, 3)
+  const rightQuotes = pick.quotes.slice(3)
 
   return (
     <>
-      <aside
-        aria-hidden
-        className="pointer-events-none fixed left-4 top-1/2 z-10 hidden -translate-y-1/2 flex-col gap-4 xl:flex xl:max-w-[200px]"
-      >
-        {left.map((q, i) => (
-          <QuoteCard key={`l-${i}-${q}`} quote={q} accent="left" />
-        ))}
-      </aside>
-      <aside
-        aria-hidden
-        className="pointer-events-none fixed right-4 top-1/2 z-10 hidden -translate-y-1/2 flex-col gap-4 xl:flex xl:max-w-[200px]"
-      >
-        {right.map((q, i) => (
-          <QuoteCard key={`r-${i}-${q}`} quote={q} accent="right" />
-        ))}
-      </aside>
+      <SidePanel
+        side="left"
+        imageUrl={pick.leftImage}
+        quotes={leftQuotes}
+      />
+      <SidePanel
+        side="right"
+        imageUrl={pick.rightImage}
+        quotes={rightQuotes}
+      />
     </>
   )
 }
 
-function QuoteCard({
-  quote,
-  accent,
-}: {
-  quote: string
-  accent: 'left' | 'right'
-}) {
+interface SidePanelProps {
+  side: 'left' | 'right'
+  imageUrl: string
+  quotes: string[]
+}
+
+function SidePanel({ side, imageUrl, quotes }: SidePanelProps) {
+  const isLeft = side === 'left'
   return (
-    <figure
+    <aside
+      aria-hidden
       className={
-        accent === 'left'
-          ? 'rounded-xl border border-slate-100 bg-white/70 px-4 py-3 text-left text-xs italic leading-relaxed text-slate-600 shadow-sm backdrop-blur'
-          : 'rounded-xl border border-slate-100 bg-white/70 px-4 py-3 text-right text-xs italic leading-relaxed text-slate-600 shadow-sm backdrop-blur'
+        // pointer-events-none so the panels never steal a click from
+        // the centered dashboard content. fixed full-height. visible
+        // from xl up.
+        isLeft
+          ? 'pointer-events-none fixed bottom-0 left-0 top-0 z-0 hidden w-[260px] flex-col justify-center gap-5 overflow-hidden bg-slate-900 px-6 py-12 2xl:flex 2xl:w-[340px]'
+          : 'pointer-events-none fixed bottom-0 right-0 top-0 z-0 hidden w-[260px] flex-col justify-center gap-5 overflow-hidden bg-slate-900 px-6 py-12 2xl:flex 2xl:w-[340px]'
       }
+      style={{
+        backgroundImage: `linear-gradient(${
+          isLeft ? '90deg' : '270deg'
+        }, rgba(15,23,42,0.55), rgba(15,23,42,0.85)), url(${imageUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
     >
-      <span
-        aria-hidden
-        className={
-          accent === 'left'
-            ? 'mb-1 block text-base leading-none text-brand-400'
-            : 'mb-1 block text-base leading-none text-brand-400'
-        }
-      >
-        “
-      </span>
-      <blockquote className="m-0">{quote}</blockquote>
-    </figure>
+      {quotes.map((q, i) => (
+        <blockquote
+          key={`${side}-${i}-${q}`}
+          className="font-display text-2xl font-normal uppercase leading-tight tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] 2xl:text-3xl"
+        >
+          <span
+            aria-hidden
+            className="block text-3xl leading-none text-brand-300 2xl:text-4xl"
+          >
+            “
+          </span>
+          {q}
+        </blockquote>
+      ))}
+    </aside>
   )
 }

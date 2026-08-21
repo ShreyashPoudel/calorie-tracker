@@ -4,7 +4,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        // Body / UI text — clean sans-serif
         sans: [
+          'Inter',
           'system-ui',
           '-apple-system',
           'Segoe UI',
@@ -13,6 +15,8 @@ export default {
           'Arial',
           'sans-serif',
         ],
+        // Display text — bold condensed font for motivational quotes
+        display: ['"Bebas Neue"', 'Impact', 'Anton', 'sans-serif'],
       },
       colors: {
         brand: {
