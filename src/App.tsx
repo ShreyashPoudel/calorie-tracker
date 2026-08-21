@@ -6,6 +6,7 @@ import { HistoryPage } from './pages/HistoryPage'
 import { LoginPage } from './pages/LoginPage'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { MotivationalQuotes } from './components/MotivationalQuotes'
 
 type Route = 'dashboard' | 'history' | 'settings'
 
@@ -40,6 +41,7 @@ function Shell() {
 
   return (
     <div className="min-h-full">
+      <MotivationalQuotes />
       <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/85 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <button
