@@ -35,8 +35,8 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-xl space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-white">Settings</h1>
+        <p className="mt-1 text-sm text-slate-400">
           Adjust your daily nutrition targets and manage templates.
         </p>
       </header>
@@ -82,7 +82,7 @@ export function SettingsPage() {
           </button>
           <div className="flex items-center gap-3">
             {saved && (
-              <span className="text-xs font-medium text-emerald-600">
+              <span className="text-xs font-medium text-emerald-400">
                 Saved ✓
               </span>
             )}
@@ -94,20 +94,20 @@ export function SettingsPage() {
       </form>
 
       <section className="card p-5">
-        <h2 className="mb-1 text-sm font-semibold text-slate-700">
+        <h2 className="mb-1 text-sm font-semibold text-white">
           Meal templates
         </h2>
-        <p className="mb-3 text-xs text-slate-500">
+        <p className="mb-3 text-xs text-slate-400">
           Saved from the dashboard via "Save as template". Tap one on any meal
           card to log it instantly.
         </p>
 
         {templates.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+          <p className="rounded-lg border border-dashed border-slate-700 px-4 py-6 text-center text-sm text-slate-500">
             No templates yet.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-slate-800">
             {templates.map((tpl) => (
               <TemplateRow
                 key={tpl.id}
@@ -120,10 +120,10 @@ export function SettingsPage() {
       </section>
 
       <section className="card p-5">
-        <h2 className="mb-2 text-sm font-semibold text-slate-700">
+        <h2 className="mb-2 text-sm font-semibold text-white">
           About your data
         </h2>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-400">
           All entries are stored in Supabase (cloud Postgres), so they sync
           across every device you log in from. Templates follow the same
           pattern.
@@ -146,12 +146,12 @@ function TemplateRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span aria-hidden>{MEAL_EMOJI[template.meal]}</span>
-          <span className="font-medium text-slate-800">{template.name}</span>
-          <span className="text-xs text-slate-500">
+          <span className="font-medium text-white">{template.name}</span>
+          <span className="text-xs text-slate-400">
             · {MEAL_LABELS[template.meal]}
           </span>
         </div>
-        <div className="mt-0.5 text-xs text-slate-500">
+        <div className="mt-0.5 text-xs text-slate-400">
           {template.items.length} item{template.items.length === 1 ? '' : 's'}
           {' · '}
           {formatNumber(totals.calories)} kcal ·{' '}

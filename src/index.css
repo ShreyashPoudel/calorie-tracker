@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design tokens ──────────────────────────────────────────────────
+ * Dark theme is the default. All colors are picked for AA contrast on
+ * slate-950 backgrounds.
+ * ─────────────────────────────────────────────────────────────────── */
+
 @layer base {
   html,
   body,
@@ -9,13 +14,13 @@
     height: 100%;
   }
   body {
-    @apply bg-slate-50 text-slate-800 antialiased;
+    @apply bg-slate-950 text-slate-100 antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
   h1,
   h2,
   h3 {
-    @apply font-semibold text-slate-900;
+    @apply font-semibold text-white;
   }
   button {
     @apply select-none;
@@ -24,35 +29,74 @@
 
 @layer components {
   .card {
-    @apply rounded-2xl bg-white shadow-card border border-slate-100;
+    @apply rounded-2xl border border-slate-800/80 bg-slate-900/70 shadow-card backdrop-blur;
   }
   .btn {
     @apply inline-flex items-center justify-center gap-1.5 rounded-lg
       px-3 py-2 text-sm font-medium transition-colors
-      focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1;
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700
-      focus-visible:ring-brand-500;
+    @apply btn bg-brand-500 text-white hover:bg-brand-400
+      focus-visible:ring-brand-400;
   }
   .btn-secondary {
-    @apply btn bg-slate-100 text-slate-700 hover:bg-slate-200
-      focus-visible:ring-slate-300;
+    @apply btn bg-slate-800 text-slate-100 hover:bg-slate-700
+      focus-visible:ring-slate-500;
   }
   .btn-ghost {
-    @apply btn text-slate-600 hover:bg-slate-100
-      focus-visible:ring-slate-300;
+    @apply btn text-slate-300 hover:bg-slate-800 hover:text-white
+      focus-visible:ring-slate-500;
   }
   .btn-danger {
-    @apply btn text-red-600 hover:bg-red-50
-      focus-visible:ring-red-300;
+    @apply btn text-red-300 hover:bg-red-950 hover:text-red-200
+      focus-visible:ring-red-500;
   }
   .input {
-    @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2
-      text-sm text-slate-800 placeholder:text-slate-400
-      focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100;
+    @apply w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2
+      text-sm text-slate-100 placeholder:text-slate-500
+      focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40;
   }
   .label {
-    @apply mb-1 block text-xs font-medium text-slate-600;
+    @apply mb-1 block text-xs font-medium text-slate-400;
+  }
+}
+
+/* ─── Animated gradient orbs used by motivational panels ─────────── */
+@keyframes orb-drift-1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(40px, -30px) scale(1.15);
+  }
+}
+@keyframes orb-drift-2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-30px, 40px) scale(1.1);
+  }
+}
+@keyframes orb-drift-3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(0.95);
+  }
+  50% {
+    transform: translate(20px, 20px) scale(1.05);
+  }
+}
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

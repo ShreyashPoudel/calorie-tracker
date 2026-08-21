@@ -70,7 +70,7 @@ export function MealCard({
           <span className="text-2xl" aria-hidden>
             {MEAL_EMOJI[meal]}
           </span>
-          <h3 className="text-base font-semibold text-slate-800">
+          <h3 className="text-base font-semibold text-white">
             {MEAL_LABELS[meal]}
           </h3>
         </div>
@@ -95,7 +95,7 @@ export function MealCard({
       </header>
 
       {foods.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-sm text-slate-400">
+        <p className="rounded-lg border border-dashed border-slate-700 px-3 py-6 text-center text-sm text-slate-500">
           No foods logged for {MEAL_LABELS[meal].toLowerCase()} yet.
         </p>
       ) : (
@@ -111,22 +111,22 @@ export function MealCard({
         </ul>
       )}
 
-      <footer className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-sm">
+      <footer className="mt-3 flex items-center justify-between border-t border-slate-800 pt-3 text-sm">
         <button
           type="button"
           onClick={() => setMode('save')}
           disabled={!hasItems}
-          className="text-xs font-medium text-brand-700 hover:text-brand-800 disabled:cursor-not-allowed disabled:text-slate-400"
+          className="text-xs font-medium text-brand-300 hover:text-brand-200 disabled:cursor-not-allowed disabled:text-slate-600"
           title={hasItems ? 'Save current items as a reusable template' : 'Log some foods first'}
         >
           💾 Save as template
         </button>
-        <span className="text-slate-700">
-          <strong className="font-semibold text-orange-600">
+        <span className="text-slate-300">
+          <strong className="font-semibold text-orange-400">
             {formatNumber(totals.calories)} kcal
           </strong>
-          <span className="mx-1.5 text-slate-300">|</span>
-          <strong className="font-semibold text-emerald-600">
+          <span className="mx-1.5 text-slate-600">|</span>
+          <strong className="font-semibold text-emerald-400">
             {formatNumber(totals.protein)} g
           </strong>
           <span className="text-slate-500"> protein</span>

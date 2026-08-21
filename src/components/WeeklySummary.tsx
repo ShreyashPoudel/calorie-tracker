@@ -19,9 +19,7 @@ export function WeeklySummary({ days, targets, endDate }: WeeklySummaryProps) {
   return (
     <section className="card p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-slate-800">
-          Last 7 days
-        </h2>
+        <h2 className="text-base font-semibold text-white">Last 7 days</h2>
         <span className="text-xs text-slate-400">
           {stats.days} day{stats.days === 1 ? '' : 's'} with data
         </span>
@@ -49,7 +47,7 @@ export function WeeklySummary({ days, targets, endDate }: WeeklySummaryProps) {
       </div>
 
       <div className="mt-5">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
           Calories by day
         </p>
         <div className="flex h-32 items-end gap-1.5">
@@ -62,20 +60,20 @@ export function WeeklySummary({ days, targets, endDate }: WeeklySummaryProps) {
                 className="flex flex-1 flex-col items-center justify-end gap-1"
                 title={`${formatShortDate(d.date)} · ${formatNumber(d.calories)} kcal · ${formatNumber(d.protein)} g protein`}
               >
-                <div className="relative w-full overflow-hidden rounded-md bg-slate-100" style={{ height: '100%' }}>
+                <div className="relative w-full overflow-hidden rounded-md bg-slate-800" style={{ height: '100%' }}>
                   <div
                     className={`absolute bottom-0 left-0 right-0 ${over ? 'bg-red-400' : 'bg-orange-400'} transition-all`}
                     style={{ height: `${Math.max(2, fill)}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-medium text-slate-500">
+                <span className="text-[10px] font-medium text-slate-400">
                   {formatShortDate(d.date)}
                 </span>
               </div>
             )
           })}
         </div>
-        <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
+        <div className="mt-2 flex items-center gap-3 text-xs text-slate-400">
           <span className="inline-flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-orange-400" />
             Under target
@@ -101,13 +99,13 @@ function Stat({
   success?: boolean
 }) {
   return (
-    <div className="rounded-xl bg-slate-50 px-3 py-2.5">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+    <div className="rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2.5">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
         {label}
       </p>
       <p
         className={`mt-0.5 text-lg font-semibold ${
-          success ? 'text-emerald-700' : 'text-slate-800'
+          success ? 'text-emerald-300' : 'text-white'
         }`}
       >
         {value}

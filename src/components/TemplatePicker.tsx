@@ -42,7 +42,7 @@ export function TemplatePicker({
       role="dialog"
       aria-modal="true"
       aria-labelledby={headingId}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel()
       }}
@@ -63,10 +63,10 @@ export function TemplatePicker({
         </div>
 
         {templates.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
+          <p className="rounded-lg border border-dashed border-slate-700 px-4 py-8 text-center text-sm text-slate-400">
             No templates saved yet. Log a meal first, then tap
             <br />
-            <strong className="font-semibold text-slate-700">
+            <strong className="font-semibold text-slate-200">
               Save as template
             </strong>{' '}
             to reuse it later.
@@ -91,8 +91,8 @@ export function TemplatePicker({
             )}
 
             {selected && totals && (
-              <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                <strong className="font-semibold text-slate-700">
+              <div className="mt-4 rounded-lg border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-xs text-brand-200">
+                <strong className="font-semibold text-white">
                   Will log {selected.items.length} item
                   {selected.items.length === 1 ? '' : 's'}:
                 </strong>{' '}
@@ -134,7 +134,7 @@ function TemplateList({
 }) {
   return (
     <div className="mb-3">
-      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
         {heading}
       </h3>
       <ul className="space-y-1.5">
@@ -148,17 +148,17 @@ function TemplateList({
                 onClick={() => onSelect(tpl.id)}
                 className={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${
                   isSelected
-                    ? 'border-brand-400 bg-brand-50'
-                    : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    ? 'border-brand-400 bg-brand-500/15 ring-1 ring-brand-400/40'
+                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800'
                 }`}
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-medium text-slate-800">{tpl.name}</span>
-                  <span className="text-xs text-slate-500">
+                  <span className="font-medium text-white">{tpl.name}</span>
+                  <span className="text-xs text-slate-400">
                     {tpl.items.length} item{tpl.items.length === 1 ? '' : 's'}
                   </span>
                 </div>
-                <div className="mt-0.5 text-xs text-slate-500">
+                <div className="mt-0.5 text-xs text-slate-400">
                   {formatNumber(totals.calories)} kcal ·{' '}
                   {formatNumber(totals.protein)} g protein
                 </div>

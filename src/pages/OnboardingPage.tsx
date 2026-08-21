@@ -2,12 +2,6 @@ import { useId, useState } from 'react'
 import { useNutrition } from '../context/useNutrition'
 import { formatNumber } from '../utils/calculations'
 
-/**
- * First-run wizard shown right after signup. Collects daily calorie +
- * protein targets, persists them via `setTargets`, and trusts the
- * NutritionContext to flip `onboarded = true` so the shell renders
- * the dashboard.
- */
 export function OnboardingPage() {
   const headingId = useId()
   const { targets, setTargets, user, signOut } = useNutrition()
@@ -32,8 +26,6 @@ export function OnboardingPage() {
     }
     setError(null)
     setSubmitting(true)
-    // setTargets is fire-and-forget — errors are surfaced via the
-    // context's error banner. onboarded flips true optimistically.
     setTargets({ calories: Math.round(cal), protein: Math.round(pro) })
     setSubmitting(false)
   }
@@ -41,18 +33,27 @@ export function OnboardingPage() {
   const firstName = (user?.email ?? '').split('@')[0]
 
   return (
-    <div className="min-h-full bg-slate-50 px-4 py-10">
-      <div className="mx-auto max-w-md">
+    <div className="relative min-h-screen overflow-hidden bg-slate-950">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-brand-600/30 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-32 bottom-0 h-96 w-96 rounded-full bg-brand-700/20 blur-3xl"
+      />
+
+      <div className="relative mx-auto max-w-md px-4 py-10">
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand-600 text-lg text-white">
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-lg text-white shadow-lg shadow-brand-900/50">
               🍽️
             </span>
             <div>
-              <h1 className="text-base font-semibold leading-tight text-slate-900">
+              <h1 className="text-base font-semibold leading-tight text-white">
                 Nutrition Tracker
               </h1>
-              <p className="text-[11px] font-medium text-slate-500">
+              <p className="text-[11px] font-medium text-slate-400">
                 Calories · Protein
               </p>
             </div>
@@ -62,17 +63,17 @@ export function OnboardingPage() {
             onClick={() => {
               if (confirm('Sign out before finishing setup?')) void signOut()
             }}
-            className="text-xs font-medium text-slate-500 hover:text-slate-700"
+            className="text-xs font-medium text-slate-400 hover:text-slate-200"
           >
             Sign out
           </button>
         </div>
 
-        <section aria-labelledby={headingId} className="card p-5">
-          <h2 id={headingId} className="text-xl font-semibold text-slate-900">
+        <section aria-labelledby={headingId} className="card p-6">
+          <h2 id={headingId} className="text-xl font-semibold text-white">
             Welcome{firstName ? `, ${firstName}` : ''} 👋
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-400">
             Two quick numbers and you're set. You can change these anytime
             from Settings.
           </p>
@@ -81,7 +82,7 @@ export function OnboardingPage() {
             <div>
               <label className="label" htmlFor="onb-cal">
                 Daily calorie target{' '}
-                <span className="font-normal text-slate-400">(kcal)</span>
+                <span className="font-normal text-slate-500">(kcal)</span>
               </label>
               <input
                 id="onb-cal"
@@ -94,7 +95,7 @@ export function OnboardingPage() {
                 onChange={(e) => setCalories(e.target.value)}
                 autoFocus
               />
-              <p className="mt-1 text-[11px] text-slate-400">
+              <p className="mt-1 text-[11px] text-slate-500">
                 Rough guide: 2000 kcal to maintain, 1500 to cut, 2500+ to
                 bulk. Adjust based on your body weight and activity.
               </p>
@@ -103,7 +104,7 @@ export function OnboardingPage() {
             <div>
               <label className="label" htmlFor="onb-pro">
                 Daily protein target{' '}
-                <span className="font-normal text-slate-400">(g)</span>
+                <span className="font-normal text-slate-500">(g)</span>
               </label>
               <input
                 id="onb-pro"
@@ -115,7 +116,7 @@ export function OnboardingPage() {
                 value={protein}
                 onChange={(e) => setProtein(e.target.value)}
               />
-              <p className="mt-1 text-[11px] text-slate-400">
+              <p className="mt-1 text-[11px] text-slate-500">
                 Rough guide: 1.6–2.2 g per kg of body weight. For a 70 kg
                 adult that's 110–150 g.
               </p>
@@ -124,14 +125,14 @@ export function OnboardingPage() {
             {error && (
               <p
                 role="alert"
-                className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                className="rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2 text-xs text-red-200"
               >
                 {error}
               </p>
             )}
 
             <div className="flex items-center justify-between gap-3 pt-2">
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-400">
                 {formatNumber(Number(calories) || 0)} kcal ·{' '}
                 {formatNumber(Number(protein) || 0)} g protein per day
               </span>

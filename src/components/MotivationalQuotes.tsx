@@ -43,25 +43,42 @@ const QUOTES: string[] = [
   "You don't have to be extreme, just consistent.",
 ]
 
-// Gym / fitness cover photos from Unsplash. Stable direct URLs that work
-// without an API key. `?w=...&auto=format&fit=crop&q=80` keeps the
-// payload small. If a URL ever 404s the dark overlay still looks fine.
-const GYM_IMAGES = [
-  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=900&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1571010196384-0c1cb3d4e0e0?w=900&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1583500178690-f7fd39c43d4b?w=900&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=900&auto=format&fit=crop&q=80',
+// Per-side gradient palettes. Cycle by date so the panels don't look
+// identical on the same day. Pairs are picked so left + right are
+// always visually distinct.
+const GRADIENT_PAIRS: Array<{ left: string; right: string }> = [
+  {
+    left: 'from-brand-700 via-brand-600 to-orange-500',
+    right: 'from-purple-700 via-pink-600 to-rose-500',
+  },
+  {
+    left: 'from-slate-800 via-brand-700 to-brand-500',
+    right: 'from-indigo-800 via-purple-700 to-fuchsia-600',
+  },
+  {
+    left: 'from-emerald-800 via-teal-700 to-cyan-500',
+    right: 'from-rose-800 via-pink-600 to-orange-500',
+  },
+  {
+    left: 'from-orange-700 via-rose-600 to-pink-500',
+    right: 'from-cyan-800 via-sky-700 to-indigo-600',
+  },
+  {
+    left: 'from-violet-800 via-purple-700 to-pink-500',
+    right: 'from-slate-800 via-slate-700 to-brand-600',
+  },
+  {
+    left: 'from-amber-700 via-orange-600 to-red-500',
+    right: 'from-blue-800 via-indigo-700 to-violet-600',
+  },
+  {
+    left: 'from-fuchsia-800 via-pink-600 to-rose-500',
+    right: 'from-emerald-800 via-green-700 to-teal-600',
+  },
 ]
 
 const QUOTES_PER_DAY = 5
 
-/**
- * Hash a YYYY-MM-DD string to a stable 32-bit integer. Different days
- * produce different starting offsets into the pool; same day always
- * produces the same quotes / images.
- */
 function hashDate(seed: string): number {
   let h = 0
   for (let i = 0; i < seed.length; i++) {
@@ -72,38 +89,33 @@ function hashDate(seed: string): number {
 
 interface DailyPick {
   quotes: string[]
-  leftImage: string
-  rightImage: string
+  palette: { left: string; right: string }
 }
 
 function pickFor(date: Date): DailyPick {
   const seed = date.toISOString().slice(0, 10)
   const h = hashDate(seed)
   const qStart = h % QUOTES.length
-  const iStart = h % GYM_IMAGES.length
+  const pStart = h % GRADIENT_PAIRS.length
   const quotes: string[] = []
   for (let i = 0; i < QUOTES_PER_DAY; i++) {
     quotes.push(QUOTES[(qStart + i) % QUOTES.length])
   }
   return {
     quotes,
-    leftImage: GYM_IMAGES[iStart % GYM_IMAGES.length],
-    // Offset by one so left and right aren't identical on the same day.
-    rightImage: GYM_IMAGES[(iStart + 1) % GYM_IMAGES.length],
+    palette: GRADIENT_PAIRS[pStart],
   }
 }
 
 /**
- * Side-margin motivational quotes + cover images.
+ * Side-margin motivational quote panels for the dashboard.
  *
- * - Picks 5 quotes from a pool of 30 (gym + diet + empowerment, mixed
- *   male/female/neutral) using today's date as the seed. Rotation is
- *   deterministic — two users opening the app on the same day see the
- *   same set.
- * - Also picks two different gym photos per day for the side panels.
- * - Auto-refreshes at the next local midnight so quotes and images
- *   change without a reload.
- * - Hidden below the xl breakpoint so they don't crowd narrow screens.
+ * - Picks 5 quotes + a gradient palette from pools using today's date
+ *   as a seed — deterministic and changes daily.
+ * - No external images; gradients + SVG dot pattern overlay + animated
+ *   blob orbs render reliably on any network.
+ * - Auto-refreshes at the next local midnight.
+ * - Hidden below xl so they don't crowd narrow screens.
  */
 export function MotivationalQuotes() {
   const [pick, setPick] = useState<DailyPick>(() => pickFor(new Date()))
@@ -130,8 +142,7 @@ export function MotivationalQuotes() {
     return () => clearTimeout(timer)
   }, [])
 
-  // 3 on the left, 2 on the right — uneven so the layout feels less
-  // mirrored and more editorial.
+  // 3 on the left, 2 on the right — uneven for editorial feel.
   const leftQuotes = pick.quotes.slice(0, 3)
   const rightQuotes = pick.quotes.slice(3)
 
@@ -139,59 +150,114 @@ export function MotivationalQuotes() {
     <>
       <SidePanel
         side="left"
-        imageUrl={pick.leftImage}
+        gradient={pick.palette.left}
         quotes={leftQuotes}
       />
       <SidePanel
         side="right"
-        imageUrl={pick.rightImage}
+        gradient={pick.palette.right}
         quotes={rightQuotes}
       />
     </>
   )
 }
 
-interface SidePanelProps {
+function SidePanel({
+  side,
+  gradient,
+  quotes,
+}: {
   side: 'left' | 'right'
-  imageUrl: string
+  gradient: string
   quotes: string[]
-}
-
-function SidePanel({ side, imageUrl, quotes }: SidePanelProps) {
-  const isLeft = side === 'left'
+}) {
   return (
     <aside
       aria-hidden
       className={
         // pointer-events-none so the panels never steal a click from
-        // the centered dashboard content. fixed full-height. visible
-        // from xl up.
-        isLeft
-          ? 'pointer-events-none fixed bottom-0 left-0 top-0 z-0 hidden w-[260px] flex-col justify-center gap-5 overflow-hidden bg-slate-900 px-6 py-12 2xl:flex 2xl:w-[340px]'
-          : 'pointer-events-none fixed bottom-0 right-0 top-0 z-0 hidden w-[260px] flex-col justify-center gap-5 overflow-hidden bg-slate-900 px-6 py-12 2xl:flex 2xl:w-[340px]'
+        // the centered dashboard. Full viewport height. Hidden below xl.
+        'pointer-events-none fixed bottom-0 top-0 z-0 hidden w-[280px] overflow-hidden xl:block 2xl:w-[360px] ' +
+        (side === 'left' ? 'left-0' : 'right-0')
       }
-      style={{
-        backgroundImage: `linear-gradient(${
-          isLeft ? '90deg' : '270deg'
-        }, rgba(15,23,42,0.55), rgba(15,23,42,0.85)), url(${imageUrl})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
     >
-      {quotes.map((q, i) => (
-        <blockquote
-          key={`${side}-${i}-${q}`}
-          className="font-display text-2xl font-normal uppercase leading-tight tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] 2xl:text-3xl"
-        >
-          <span
-            aria-hidden
-            className="block text-3xl leading-none text-brand-300 2xl:text-4xl"
-          >
-            “
-          </span>
-          {q}
-        </blockquote>
-      ))}
+      {/* Gradient base */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+
+      {/* Animated orbs */}
+      <div
+        className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/10 blur-3xl"
+        style={{ animation: 'orb-drift-1 14s ease-in-out infinite' }}
+      />
+      <div
+        className="absolute -right-16 bottom-10 h-80 w-80 rounded-full bg-black/30 blur-3xl"
+        style={{ animation: 'orb-drift-2 18s ease-in-out infinite' }}
+      />
+      <div
+        className="absolute left-10 top-1/2 h-56 w-56 rounded-full bg-white/5 blur-3xl"
+        style={{ animation: 'orb-drift-3 22s ease-in-out infinite' }}
+      />
+
+      {/* Dot pattern overlay */}
+      <DotPattern />
+
+      {/* Top/bottom vignette for text contrast */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40" />
+
+      {/* Quotes */}
+      <div
+        className={
+          'relative flex h-full flex-col justify-center gap-6 px-6 py-12 ' +
+          (side === 'left' ? 'items-start text-left' : 'items-end text-right')
+        }
+      >
+        {quotes.map((q, i) => (
+          <QuoteCard key={`${side}-${i}-${q}`} quote={q} index={i} />
+        ))}
+      </div>
     </aside>
+  )
+}
+
+function QuoteCard({ quote, index }: { quote: string; index: number }) {
+  return (
+    <div
+      className="max-w-[240px] animate-[fadeInUp_600ms_ease-out_both]"
+      style={{ animationDelay: `${index * 80}ms` }}
+    >
+      <div className="mb-2 flex items-center gap-2">
+        <span className="font-display text-3xl leading-none text-white/70">
+          “
+        </span>
+        <span className="h-px w-10 bg-white/40" />
+      </div>
+      <p className="font-display text-2xl font-normal uppercase leading-[1.05] tracking-wide text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)] 2xl:text-3xl">
+        {quote}
+      </p>
+    </div>
+  )
+}
+
+/** Repeating dot grid as inline SVG — adds texture without a network call. */
+function DotPattern() {
+  return (
+    <svg
+      aria-hidden
+      className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.18]"
+    >
+      <defs>
+        <pattern
+          id="dot-grid"
+          x="0"
+          y="0"
+          width="24"
+          height="24"
+          patternUnits="userSpaceOnUse"
+        >
+          <circle cx="1" cy="1" r="1" fill="white" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#dot-grid)" />
+    </svg>
   )
 }

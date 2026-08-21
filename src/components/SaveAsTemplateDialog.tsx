@@ -53,7 +53,7 @@ export function SaveAsTemplateDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby={headingId}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel()
       }}
@@ -107,21 +107,21 @@ export function SaveAsTemplateDialog({
             </select>
           </div>
 
-          <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-            Will save <strong className="font-semibold">{foods.length}</strong>{' '}
+          <div className="rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-xs text-slate-300">
+            Will save <strong className="font-semibold text-white">{foods.length}</strong>{' '}
             item{foods.length === 1 ? '' : 's'} totalling{' '}
-            <strong className="font-semibold text-slate-800">
+            <strong className="font-semibold text-white">
               {formatNumber(totals.calories)} kcal
             </strong>{' '}
             ·{' '}
-            <strong className="font-semibold text-slate-800">
+            <strong className="font-semibold text-white">
               {formatNumber(totals.protein)} g protein
             </strong>
             .
           </div>
 
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+            <p className="rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2 text-xs text-red-200">
               {error}
             </p>
           )}

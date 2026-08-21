@@ -19,19 +19,19 @@ function quantityLabel(food: Food): string {
 
 export function FoodItem({ food, onEdit, onDelete }: FoodItemProps) {
   return (
-    <li className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2.5">
+    <li className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2.5 transition-colors hover:border-slate-700 hover:bg-slate-900">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-slate-800">
+        <p className="truncate text-sm font-semibold text-slate-100">
           {food.name}
         </p>
-        <p className="mt-0.5 text-xs text-slate-500">{quantityLabel(food)}</p>
+        <p className="mt-0.5 text-xs text-slate-400">{quantityLabel(food)}</p>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-2 py-0.5 font-medium text-orange-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-orange-500" aria-hidden />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 px-2 py-0.5 font-medium text-orange-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-orange-400" aria-hidden />
             {formatNumber(food.calories)} kcal
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 font-medium text-emerald-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
             {formatNumber(food.protein)} g protein
           </span>
         </div>
@@ -48,7 +48,7 @@ export function FoodItem({ food, onEdit, onDelete }: FoodItemProps) {
         <button
           type="button"
           onClick={onDelete}
-          className="btn-ghost px-2 py-1 text-xs hover:text-red-600"
+          className="btn-ghost px-2 py-1 text-xs"
           aria-label={`Delete ${food.name}`}
         >
           🗑️

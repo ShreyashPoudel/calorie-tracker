@@ -181,7 +181,7 @@ export function FoodForm({
       role="dialog"
       aria-modal="true"
       aria-labelledby={headingId}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel()
       }}
@@ -243,7 +243,7 @@ export function FoodForm({
                 {quantityLabel}
               </label>
               <div
-                className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium"
+                className="inline-flex rounded-lg border border-slate-700 bg-slate-800 p-0.5 text-xs font-medium"
                 role="radiogroup"
                 aria-label="Quantity unit"
               >
@@ -275,7 +275,7 @@ export function FoodForm({
               placeholder={quantityPlaceholder}
             />
             {state.unit === 'piece' && template?.pieceWeight && (
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-slate-400">
                 1 {template.pieceUnit} ≈ {template.pieceWeight} g
               </p>
             )}
@@ -317,13 +317,13 @@ export function FoodForm({
           </div>
 
           {state.selected && (
-            <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-700">
+            <p className="rounded-lg border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-xs text-brand-200">
               Auto-filled from database. Adjust calories/protein if needed.
             </p>
           )}
 
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+            <p className="rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2 text-xs text-red-200">
               {error}
             </p>
           )}
@@ -362,9 +362,9 @@ function UnitButton({
       onClick={onClick}
       className={`rounded-md px-2.5 py-1 transition-colors ${
         active
-          ? 'bg-white text-brand-700 shadow-sm'
-          : 'text-slate-600 hover:text-slate-800'
-      } disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-slate-600`}
+          ? 'bg-slate-700 text-brand-200 shadow-sm'
+          : 'text-slate-400 hover:text-slate-200'
+      } disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-slate-400`}
     >
       {children}
     </button>
