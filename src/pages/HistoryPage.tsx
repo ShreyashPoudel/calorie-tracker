@@ -48,14 +48,14 @@ export function HistoryPage({ selectedDate, onSelectDate }: HistoryPageProps) {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight text-white">History</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <h1 className="text-2xl font-bold tracking-tight">History</h1>
+        <p className="mt-1 text-sm text-slate-500">
           Review previous days. Click a row to see the full breakdown.
         </p>
       </header>
 
       {entries.length === 0 ? (
-        <div className="card p-8 text-center text-sm text-slate-400">
+        <div className="card p-8 text-center text-sm text-slate-500">
           No history yet. Log a food on the dashboard to get started.
         </div>
       ) : (
@@ -63,7 +63,7 @@ export function HistoryPage({ selectedDate, onSelectDate }: HistoryPageProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-900/60 text-xs uppercase tracking-wide text-slate-400">
+                <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <th className="px-4 py-2.5 font-medium">Date</th>
                   <th className="px-4 py-2.5 font-medium">Calories</th>
                   <th className="px-4 py-2.5 font-medium">Protein</th>
@@ -78,16 +78,16 @@ export function HistoryPage({ selectedDate, onSelectDate }: HistoryPageProps) {
                   return (
                     <tr
                       key={row.date}
-                      className="cursor-pointer border-b border-slate-800/60 last:border-0 transition-colors hover:bg-slate-800/40"
+                      className="cursor-pointer border-b border-slate-100 last:border-0 transition-colors hover:bg-slate-50"
                       onClick={() => onSelectDate?.(row.date)}
                     >
-                      <td className="px-4 py-2.5 font-medium text-white">
+                      <td className="px-4 py-2.5 font-medium text-slate-900">
                         {formatShortDate(row.date)}
                       </td>
-                      <td className="px-4 py-2.5 text-slate-200">
+                      <td className="px-4 py-2.5 text-slate-700">
                         {row.calories.toLocaleString()}
                       </td>
-                      <td className="px-4 py-2.5 text-slate-200">
+                      <td className="px-4 py-2.5 text-slate-700">
                         {row.protein.toFixed(1)}g
                       </td>
                       <td className="px-4 py-2.5">
@@ -109,10 +109,10 @@ export function HistoryPage({ selectedDate, onSelectDate }: HistoryPageProps) {
         <section className="card p-5">
           <header className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-white">
+              <h2 className="text-base font-semibold">
                 {formatLongDate(detail.date)}
               </h2>
-              <p className="mt-0.5 text-xs text-slate-400">
+              <p className="mt-0.5 text-xs text-slate-500">
                 {detail.foods.length} food
                 {detail.foods.length === 1 ? '' : 's'} logged
               </p>
@@ -127,7 +127,7 @@ export function HistoryPage({ selectedDate, onSelectDate }: HistoryPageProps) {
           </header>
 
           {detail.foods.length === 0 ? (
-            <p className="text-sm text-slate-400">No foods logged.</p>
+            <p className="text-sm text-slate-500">No foods logged.</p>
           ) : (
             <div className="space-y-4">
               {(['breakfast', 'lunch', 'snacks', 'dinner'] as const).map(
@@ -138,19 +138,19 @@ export function HistoryPage({ selectedDate, onSelectDate }: HistoryPageProps) {
                   if (items.length === 0) return null
                   return (
                     <div key={meal}>
-                      <h3 className="mb-1.5 text-sm font-semibold text-slate-200">
+                      <h3 className="mb-1.5 text-sm font-semibold text-slate-800">
                         {MEAL_LABELS[meal]}
                       </h3>
-                      <ul className="divide-y divide-slate-800 rounded-xl border border-slate-800">
+                      <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
                         {items.map((food) => (
                           <li
                             key={food.id}
                             className="flex items-center justify-between px-3 py-2 text-sm"
                           >
-                            <span className="font-medium text-white">
+                            <span className="font-medium text-slate-900">
                               {food.name}
                             </span>
-                            <span className="text-xs text-slate-400">
+                            <span className="text-xs text-slate-500">
                               {quantityLabel(food)} · {food.calories} kcal · {food.protein}g protein
                             </span>
                           </li>
@@ -172,7 +172,7 @@ function GoalIcon({ hit }: { hit: boolean }) {
   return (
     <span
       className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs ${
-        hit ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'
+        hit ? 'bg-protein-500/15 text-protein-700' : 'bg-amber-500/15 text-amber-700'
       }`}
       title={hit ? 'Goal met' : 'Goal not met'}
     >

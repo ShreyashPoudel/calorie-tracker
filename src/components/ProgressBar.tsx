@@ -34,7 +34,7 @@ export function ProgressBar({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(percent)}
-        className="h-2.5 w-full overflow-hidden rounded-full bg-slate-800"
+        className="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-200"
       >
         <div
           className={`h-full ${barColor} transition-all`}
@@ -42,15 +42,15 @@ export function ProgressBar({
         />
         {overFill > 0 && (
           <div
-            className="-mt-2.5 h-full bg-red-500 opacity-70 transition-all"
-            style={{ width: `${overFill}%` }}
+            className="absolute top-0 h-full bg-red-500 opacity-70 transition-all"
+            style={{ left: '100%', width: `${overFill}%`, transform: 'translateX(-100%)' }}
           />
         )}
       </div>
       {caption !== undefined ? (
-        <p className="mt-1 text-xs font-medium text-slate-400">{caption}</p>
+        <p className="mt-1 text-xs font-medium text-slate-500">{caption}</p>
       ) : (
-        <p className="mt-1 text-xs font-medium text-slate-400">
+        <p className="mt-1 text-xs font-medium text-slate-500">
           {formatPercent(percent)}
         </p>
       )}

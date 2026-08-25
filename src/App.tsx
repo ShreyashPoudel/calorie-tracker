@@ -6,7 +6,6 @@ import { HistoryPage } from './pages/HistoryPage'
 import { LoginPage } from './pages/LoginPage'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { SettingsPage } from './pages/SettingsPage'
-import { MotivationalQuotes } from './components/MotivationalQuotes'
 
 type Route = 'dashboard' | 'history' | 'settings'
 
@@ -37,22 +36,21 @@ function Shell() {
 
   return (
     <div className="min-h-full">
-      <MotivationalQuotes />
-      <header className="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <button
             type="button"
             className="flex items-center gap-2 text-left"
             onClick={() => setRoute('dashboard')}
           >
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-base text-white shadow-lg shadow-brand-900/40">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-base text-white shadow-sm">
               🍽️
             </span>
             <span>
-              <span className="block text-sm font-semibold leading-tight text-white">
+              <span className="block text-sm font-semibold leading-tight text-slate-900">
                 Nutrition Tracker
               </span>
-              <span className="block text-[11px] font-medium text-slate-400">
+              <span className="block text-[11px] font-medium text-slate-500">
                 Calories · Protein
               </span>
             </span>
@@ -65,8 +63,8 @@ function Shell() {
                   type="button"
                   className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                     route === item.id
-                      ? 'bg-brand-500/15 text-brand-300'
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      ? 'bg-brand-500/10 text-brand-700'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                   onClick={() => setRoute(item.id)}
                 >
@@ -96,7 +94,7 @@ function Shell() {
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-800 bg-slate-950/95 backdrop-blur sm:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur sm:hidden">
         <div className="mx-auto flex max-w-3xl items-stretch justify-around">
           {NAV.map((item) => (
             <button
@@ -104,8 +102,8 @@ function Shell() {
               type="button"
               className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-xs font-medium transition-colors ${
                 route === item.id
-                  ? 'text-brand-300'
-                  : 'text-slate-500 hover:text-slate-300'
+                  ? 'text-brand-600'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
               onClick={() => setRoute(item.id)}
             >
@@ -135,7 +133,7 @@ function UserMenu({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white"
+        className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
         aria-haspopup="menu"
         aria-expanded={open}
         title={email}
@@ -160,18 +158,18 @@ function UserMenu({
           />
           <div
             role="menu"
-            className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-lg border border-slate-800 bg-slate-900 shadow-2xl shadow-black/50"
+            className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg"
           >
-            <div className="border-b border-slate-800 px-3 py-2 text-[11px] text-slate-500">
+            <div className="border-b border-slate-100 px-3 py-2 text-[11px] text-slate-500">
               Signed in as
-              <div className="truncate font-medium text-slate-200">
+              <div className="truncate font-medium text-slate-800">
                 {email}
               </div>
             </div>
             <button
               type="button"
               role="menuitem"
-              className="block w-full px-3 py-2 text-left text-sm text-slate-200 hover:bg-slate-800"
+              className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
               onClick={() => {
                 setOpen(false)
                 if (confirm('Sign out?')) void onSignOut()
@@ -188,11 +186,11 @@ function UserMenu({
 
 function FullPageSpinner({ message }: { message: string }) {
   return (
-    <div className="grid min-h-screen place-items-center bg-slate-950">
-      <div className="flex items-center gap-3 text-sm text-slate-400">
+    <div className="grid min-h-screen place-items-center bg-slate-50">
+      <div className="flex items-center gap-3 text-sm text-slate-500">
         <span
           aria-hidden
-          className="h-4 w-4 animate-spin rounded-full border-2 border-slate-700 border-t-brand-400"
+          className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-brand-500"
         />
         {message}
       </div>
@@ -214,7 +212,7 @@ function ErrorBanner({ message }: { message: string }) {
   return (
     <div
       role="alert"
-      className="mb-4 flex items-start gap-3 rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-red-200"
+      className="mb-4 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
     >
       <span aria-hidden className="mt-0.5 text-base">
         ⚠️
@@ -226,7 +224,7 @@ function ErrorBanner({ message }: { message: string }) {
 
 function LoadingNotice() {
   return (
-    <div className="mb-4 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-sm text-slate-400">
+    <div className="mb-4 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
       Loading from Supabase…
     </div>
   )

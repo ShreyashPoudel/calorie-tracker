@@ -51,7 +51,7 @@ export function DateNav({ date, onChange, onToday }: DateNavProps) {
         )}
       </div>
 
-      <p className="text-sm font-medium text-slate-400">{formatLongDate(date)}</p>
+      <p className="text-sm font-medium text-slate-600">{formatLongDate(date)}</p>
     </div>
   )
 }
